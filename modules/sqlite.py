@@ -10,7 +10,8 @@ cursor = data.cursor()
 # product_cursor = product_data.cursor()
 cursor.execute(f"CREATE TABLE IF NOT EXISTS List_products (INTEGER PRIMARY KEY,id)")
 
-def add_product(name,description,path):
+def add_product(name,description,path,message):
+    
     cursor.execute(f"CREATE TABLE IF NOT EXISTS Product_{name} (INTEGER PRIMARY KEY,id)")
     add_column("description", type_column="TEXT",name_table=f"Product_{name}")
     add_column("path", type_column="TEXT",name_table=f"Product_{name}")
