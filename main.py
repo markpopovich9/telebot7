@@ -87,14 +87,31 @@ async def continue_1(message:aiogram.types.Message):
         try:
             print(m_data.dict_admin[f"{message.chat.id}"])
             if m_data.dict_admin[f"{message.chat.id}"][0]:
-                if message.text == "Відправити повідомлення" and m_data.dict_admin[f"{message.chat.id}"][1]["status"]==None:
-                    await message.answer(text="Вкажіть текст сповіщення")
-                    m_data.dict_admin[f"{message.chat.id}"][1]["status"]="text"
+                # Надіслати повідомлення
+                if message.text == "Надіслати повідомлення" and m_data.dict_admin[f"{message.chat.id}"][1]["status"]==None:
+                    print("hello")
+                    await message.answer(text="Вкажіть назву продукту")
+                    m_data.dict_admin[f"{message.chat.id}"][1]["status"]="name1"
+
                 elif  m_data.dict_admin[f"{message.chat.id}"][1]["status"]=="text":
-                    await message.answer(text="Вкажіть опис повідомлення")
-                    m_data.dict_admin[f"{message.chat.id}"][1]["status"]="description1"
+                    
+                    await message.answer(text="Ви впевнені що хочите продовжити?",reply_markup=m_keyboard.create_keyboard([["Так","Ні"]]))
+                    m_data.dict_admin[f"{message.chat.id}"][1]["status"]="continue"
                     m_data.dict_admin[f"{message.chat.id}"][1]["text"]=message.text
-                elif m_data.dict_admin[f"{message.chat.id}"][1]["status"]=="description1":
+
+                elif m_data.dict_admin[f"{message.chat.id}"][1]["status"]=="name1":
+                    try:
+                        m_sqlite.get_value(name_table="Product_"+message.text)
+                        await message.answer(text="Вкажіть текст сповіщення")
+                        
+                        m_data.dict_admin[f"{message.chat.id}"][1]["status"]="text"
+                        m_data.dict_admin[f"{message.chat.id}"][1]["name1"]=message.text
+                    except:
+                        await message.answer(text="Невірна назва продукту")
+                        m_data.dict_admin[f"{message.chat.id}"]= [True,None]
+
+                elif m_data.dict_admin[f"{message.chat.id}"][1]["status"]=="continue":
+
                     # inline_keyboard = aiogram.types.InlineKeyboardMarkup(inline_keyboard=[[
                     #         aiogram.types.InlineKeyboardButton(text="INFO",callback_data="buy 0"),
                     #         aiogram.types.InlineKeyboardButton(text="BUY",callback_data="decline")
@@ -105,7 +122,18 @@ async def continue_1(message:aiogram.types.Message):
                     # ])
                     # # [[1,2][8]]
                     # await message.answer(text=m_data.dict_admin[f"{message.chat.id}"][1]["text"])
-                    await message.answer(text="Зараз ще не готово")
+                    if message.text=="Так":
+                        print(m_data.dict_admin[f"{message.chat.id}"][1])
+                        reply_markup = aiogram.types.InlineKeyboardMarkup(inline_keyboard=[[
+                            aiogram.types.InlineKeyboardButton(text="BUY",callback_data=f"BUY {'Product_'+m_data.dict_admin[f'{message.chat.id}'][1]['name1']}"),
+                            aiogram.types.InlineKeyboardButton(text="INFO",callback_data="INFO")
+                        ]])
+                        text= m_data.dict_admin[f"{message.chat.id}"][1]["text"]
+                        photo = m_sqlite.get_value("path","Product_"+m_data.dict_admin[f'{message.chat.id}'][1]['name1'])
+                        print(photo)
+                        await m_data.bot.send_photo(chat_id=-1002018580317, reply_markup = reply_markup,caption=text,photo=photo)
+                    elif message.text=="Ні":
+                        m_data.dict_admin[f"{message.chat.id}"]= [True,None]
                 if message.text == "Додати продукт" and m_data.dict_admin[f"{message.chat.id}"][1]["status"]==None:
                     await message.answer(text="Вкажіть назву продукту")
                     m_data.dict_admin[f"{message.chat.id}"][1]["status"]="name"
@@ -149,10 +177,12 @@ async def continue_1(message:aiogram.types.Message):
                         # -1002018580317
                         print(115)
                         print(image_id)
-                        await m_data.bot.send_photo(chat_id=-1002018580317,photo= image_id,reply_markup= m_keyboard.inline_keyboard)
+                        # await m_data.bot.send_photo(chat_id=-1002018580317,photo= image_id,reply_markup= m_keyboard.inline_keyboard)
                         print(116)
+                        m_data.dict_admin[f"{message.chat.id}"]= [True,None]
                     else:
                         await message.answer(text="Ви відіслали не зображення")
+                        m_data.dict_admin[f"{message.chat.id}"]= [True,None]
                     print(image_id)
             print('hi','hello')
         except:
@@ -332,6 +362,15 @@ async def call_back(callback:aiogram.types.callback_query.CallbackQuery):
                 await message.edit_reply_markup(callback.inline_message_id,inline_keyboard)
             except:
                 await m_data.bot.send_message(callback.from_user.id,"Вам потрібно зареєструватись або авторизуватись для покупки товарів", reply_markup= m_keyboard.create_keyboard([["Адміністратор","Кліент"]]))
+        elif "BUY" in callback.data:
+            data=callback.data.split(" ") 
+            inline_keyboard=m_keyboard.inline_keyboard
+            inline_keyboard.inline_keyboard[0][0].callback_data+=" "+data[1]
+            await m_data.bot.send_photo(chat_id=callback.from_user.id,photo=m_sqlite.get_value("path",data[1]),reply_markup=inline_keyboard)
+        elif "INFO" in callback.data:
+            data=callback.message.reply_markup.inline_keyboard[0][0].callback_data.split(" ")[1]
+            text=f"Опис продукту {data}:\n\t"+m_sqlite.get_value("description",data)
+            await m_data.bot.send_message(chat_id=callback.from_user.id,text=text)
     elif message.chat.id==m_data.moderator_id:
         
         
