@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import modules.data as m_data
+
 #__file__
 #sqlite3.connect(os.path.abspath(__file__+"/../../data")+"data.db")
 data= sqlite3.connect(os.path.abspath(__file__+"/../../data")+"/data.db")
@@ -10,16 +11,20 @@ cursor = data.cursor()
 # product_cursor = product_data.cursor()
 cursor.execute(f"CREATE TABLE IF NOT EXISTS List_products (INTEGER PRIMARY KEY,id)")
 
-def add_product(name,description,path,message):
+def add_product(name,description,path,message=None):
     
     cursor.execute(f"CREATE TABLE IF NOT EXISTS Product_{name} (INTEGER PRIMARY KEY,id)")
     add_column("description", type_column="TEXT",name_table=f"Product_{name}")
     add_column("path", type_column="TEXT",name_table=f"Product_{name}")
-    
-    add_column(f"product_{m_data.count}", type_column="TEXT",name_table=f"List_products")
-    set_value(columns=(f"product_{m_data.count}","count_product"),values=[name,m_data.count+1],name_table="List_products")
+    count = get_value("count_product","list_products")
+    if count == []:
+        count = 0
+    else:
+        count = int(count[-1][-1])+1
+    # add_column(f"product_{m_data.count}", type_column="TEXT",name_table=f"List_products")
+    set_value(columns=("product","count_product"),values=[name,count],name_table="List_products")
     set_value(columns=("description","path"),values=[description,path],name_table=f"Product_{name}")
-    m_data.count +=1 
+    # m_data.count +=1 
     data.commit()
 # ё
 def add_column(name_column,type_column,name_table="Users"):
@@ -44,17 +49,19 @@ def delete_column(name_column):
 # {} dict
 def get_value(column= "*",name_table="AdminPassword"):
     cursor.execute(f"SELECT {column} FROM {name_table}")
-    try:
+    # try:
 
-        return cursor.fetchall()[0][0]
-    except:
-        return cursor.fetchall()
+    #     return cursor.fetchall()[0][0]
+    # except:
+    return cursor.fetchall()
 def set_value(columns=("name",'123'),values=[],name_table="Users"):
+
     text=""
     for column in range(len(columns)-1):
         text+="?,"
     text+="?"
-    cursor.execute(f"INSERT INTO {name_table} {tuple(columns)} VALUES ({text})",values)
+    cursor.execute(f"INSERT INTO {name_table} {columns} VALUES ({text})",values)
+add_column("product", type_column="TEXT",name_table=f"List_products")
 add_column("count_product", type_column="INTEGER",name_table=f"List_products")
 try:
 
@@ -70,3 +77,5 @@ except:
 #     m_data.count=get_value(column= "count_product",name_table="list_products")
 
 # add_product("burger","bugrer","buburger")
+# get_value(column="product_1",name_table="List_products")
+print(get_value(column="count_product",name_table="List_products"),132)
